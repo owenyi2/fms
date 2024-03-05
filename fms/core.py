@@ -172,6 +172,7 @@ def _import_class(modulename, classname):
     Try to import classname from modulename.
     """
     logger = logging.getLogger('fms')
+
     try:
         _temp = __import__(modulename, globals(), locals(), [classname.lower(),], -1)
         themodule = getattr(_temp, classname.lower())
