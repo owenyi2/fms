@@ -4,9 +4,11 @@
 Order driven market, continuous transactions.
 Any order is considered valid.
 """
+import numpy as np
 
 from fms import markets
 from fms.utils import BUY, SELL
+from fms.utils.exceptions import MissingParameter
 
 class ContinuousOrderDriven(markets.Market):
     """
@@ -227,7 +229,6 @@ class ContinuousOrderDriven(markets.Market):
     """
 
     def __init__(self, parameters=None):
-        print "ohono" 
         """
         Class constructor.
         Gets parameters from config, pass it to superclass.
@@ -235,9 +236,27 @@ class ContinuousOrderDriven(markets.Market):
         - lastprice (float) : last transaction price, see info()
         - transaction (int) : transaction counter
         """
+        try:
+            self.p_f = parameters['engines'][0]['market']['fundamentalprice']
+        except:
+            raise AttributeError, "fundamental price not found"
+        
         markets.Market.__init__(self, parameters)
-        self.lastprice = None
+
+        self.lastprice = self.p_f 
         self.transaction = 0
+        self.l_max = parameters["agents"][0]["l_max"]
+        self.returns = np.zeros(shape=self.l_max)
+        
+        self.forecasts = {
+            "fundamentalist": 0,
+            "chartist": self.returns,
+        }
+
+    def update_returns(self, executedprice):
+        self.returns = np.append(self.returns, executedprice / self.lastprice - 1)
+        self.forecasts["fundamentalist"] = (self.p_f - self.lastprice) / self.lastprice
+        self.forecasts["chartist"] = np.cumsum(self.returns[-1:-self.l_max-1:-1]) / range(1, self.l_max+1)
 
     def is_valid(self, agent, order):
         """
@@ -280,6 +299,8 @@ class ContinuousOrderDriven(markets.Market):
                     executedprice = self.sellbook[0][0]
                 else:
                     executedprice = self.buybook[-1][0]
+                
+                self.update_returns(executedprice)
                 self.lastprice = executedprice
                 self.transaction += 1
                 buyer = self.buybook[-1][3]
@@ -288,6 +309,7 @@ class ContinuousOrderDriven(markets.Market):
                     buyer.record(BUY, executedprice, qty)
                     seller.record(SELL, executedprice, qty)
                 self.output_transaction(time, executedprice, qty)
+
                 if qty == self.buybook[-1][2]:
                     del self.buybook[-1]
                 else:

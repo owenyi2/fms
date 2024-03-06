@@ -40,7 +40,7 @@ class AsynchronousRandWReplace(Engine):
         for day in range(self.days):
             for time in range(self.daylength):
                 agt = random.randint(0, len(agents)-1)
-                order = market.sanitize_order(agents[agt].speak())
+                order = market.sanitize_order(agents[agt].speak(market))
                 if market.is_valid(agents[agt], order):
                     if self.params.orderslogfile:
                         self.output_order(order)
