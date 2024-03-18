@@ -51,7 +51,7 @@ class ChiarellaIori(agents.Agent):
         """
         order = self.act(market=market)
         order['agent'] = order.get('agent', self)
-        return order
+        return [order]
 
     def act(self, world=None, market=None):
         """
