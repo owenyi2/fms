@@ -58,8 +58,8 @@ class MarketMaking(agents.Agent):
         # print buybook[0]
 
         if sellbook[0][0] == "unset sellbook" or buybook[0][0] == "unset buybook":
-            return [{"direction": BUY, "price": 990, 'lifetime':self.tau}, 
-                {"direction": SELL, "price": 1010, 'lifetime':self.tau}]
+            return [{"direction": BUY, "price": market.p_f * .99, 'lifetime':self.tau}, 
+                {"direction": SELL, "price": market.p_f * 1.01, 'lifetime':self.tau}]
 
         # self.w_1 > 0. E.g. if we have too much inventory, then we want to make it more likely our ask is filled than our bid so we drop the price
         self.reservation_price = (sellbook[0][0] + buybook[0][0]) / 2 - self.stocks * self.w_1

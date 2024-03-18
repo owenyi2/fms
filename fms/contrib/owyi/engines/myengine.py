@@ -3,6 +3,7 @@
 Asynchronous random with replace engine
 """
 
+import pandas as pd
 import random
 import logging
 
@@ -29,6 +30,7 @@ class MyEngine(Engine):
         self.params = parameters
         self.rank = offset
         self.unique_by_agent = False
+        self.clearbooksateod = False
         if parameters:
             random.seed(parameters['randomseed'])
 
@@ -48,6 +50,12 @@ class MyEngine(Engine):
                 agt = random.randint(0, len(agents)-1)
                 orders = agents[agt].speak(market)
                 orders = [market.sanitize_order(order) for order in orders] # TODO: create a new engine/market that handles agents sending multiple orders. Need to allow `speak` to return a list of orders and need to change `sanitize_order` to accept a list of orders. And also to sanitize against wash trades.
+                
+                print("sell", [order[0] for order in market.sellbook])
+                print("buy", [order[0] for order in market.buybook])
+                print(orders)
+                input()
+
                 for order in orders:
                     if market.is_valid(agents[agt], order):
                         if self.params.orderslogfile:
@@ -73,8 +81,12 @@ class MyEngine(Engine):
                 #     pass
             if self.clearbooksateod:
                 market.clear_books()
+            market.summarise_ohlc()
+
         logger.debug("Ending with sellbook %s" % market.sellbook)
         logger.debug("Ending with buybook %s" % market.buybook)
+        
+        pd.DataFrame.from_records(market.ohlc).to_csv("yeet.csv")
 
 if __name__ == '__main__':
     print AsynchronousRandWReplace()

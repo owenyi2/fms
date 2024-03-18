@@ -247,37 +247,22 @@ class MyMarket(markets.Market):
 
         self.lastprice = self.p_f 
         self.transaction = 0
-        self.l_max = parameters["agents"][0]["l_max"]
-        self.returns = np.zeros(shape=self.l_max)
-        
-        self.forecasts = {
-            "fundamentalist": 0,
-            "chartist": self.returns,
-        }
+        self.historical = np.array([])
+        self.ohlc = [{"open": self.p_f, "high": self.p_f, "low": self.p_f, "close": self.p_f}]
 
-        # == Janky Testing Setup == #
+    def summarise_ohlc(self):
+        if len(self.historical) == 0:
+            return
 
-        # self.record_order({'direction': 1, 'quantity': 2, 'price': 3, 'agent': 'smith'}, 1)
-        # print self.sellbook
-        # # [[3, 1, 2, 'smith']]
-        # self.record_order({'direction': 1, 'quantity': 3, 'price': 4, 'agent': 'smith'}, 1)
-        # print self.sellbook
-        # # [[4, 1, 3, 'smith']]
-        # self.record_order({'direction': 1, 'quantity': 4, 'price': 5, 'agent': 'smith'}, 1, False)
-        # print self.sellbook
-        # # [[4, 1, 3, 'smith'], [5, 1, 4, 'smith']]
+        open = self.historical[0]
+        close = self.historical[-1]
+        high = max(self.historical)
+        low = min(self.historical)
 
-        # self.record_order({'direction': 1, 'quantity': 4, 'price': 5, 'agent': 'smith'}, 2, False)
-        # print self.sellbook
-        # # [[4, 1, 3, 'smith'], [5, 1, 4, 'smith'], [5, 2, 4, 'smith']]
-        # input()    
+        self.historical = []
 
-    def update_returns(self, executedprice):
-        self.returns = np.append(self.returns, executedprice / self.lastprice - 1)
-        self.forecasts["fundamentalist"] = (self.p_f - self.lastprice) / self.lastprice
-        self.forecasts["chartist"] = np.cumsum(self.returns[-1:-self.l_max-1:-1]) / range(1, self.l_max+1)
-
-
+        self.ohlc.append({"open": open, "high": high, "low": low, "close": close})
+      
     def sanitize_order(self, raw_order):
         """
         Returns agent's order as a dict with direction, price, quantity.
@@ -411,7 +396,7 @@ class MyMarket(markets.Market):
                 else:
                     executedprice = self.buybook[0][0]
                  
-                self.update_returns(executedprice)
+                self.historical = np.append(self.historical, executedprice)
                 self.lastprice = executedprice
                 self.transaction += 1
                 buyer = self.buybook[0][3]
