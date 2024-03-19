@@ -24,9 +24,10 @@ class Trend(agents.Agent):
             raise MissingParameter, 'tau'
         del self.args
 
-        lookbacks = np.random.randint(1, self.max_lookback, 2)
+        lookbacks = np.random.randint(3, self.max_lookback, 2)
         self.short_lookback = min(lookbacks)
         self.long_lookback = max(lookbacks)
+        self.noise = params["engines"][0]["market"]["executionnoise"]
 
     def speak(self, market): # overload the `speak` method to allow agents to view market
         """
@@ -41,26 +42,19 @@ class Trend(agents.Agent):
         """
         Return random order as a dict with keys in (direction, price, quantity).
         """
-        if len(market.ohlc) < self.long_lookback + 2:
+        if len(market.historical) < self.long_lookback + 2:
             return [] 
         
-        short_ma = np.mean([ohlc["close"] for ohlc in market.ohlc[-(1+self.short_lookback):-1]])
-        long_ma = np.mean([ohlc["close"] for ohlc in market.ohlc[-(1+self.long_lookback):-1]])
+        short_ma = np.mean(market.historical[-(1+self.short_lookback):-1])
+        long_ma = np.mean(market.historical[-(1+self.long_lookback):-1])
 
-        previous_short_ma = np.mean([ohlc["close"] for ohlc in market.ohlc[-(2+self.short_lookback):-2]])
-        previous_long_ma = np.mean([ohlc["close"] for ohlc in market.ohlc[-(2+self.long_lookback):-2]])
+        price = market.lastprice
+        limit = price * np.random.normal(1, self.noise)
 
-        price = market.ohlc[-1]["close"]
-
-        if short_ma > long_ma and previous_short_ma < previous_long_ma:
-            return [{'direction':BUY, 'price': price, 'lifetime': self.tau}]
-        if short_ma < long_ma and previous_short_ma > previous_long_ma:
-            return [{'direction':SELL, 'price': price, 'lifetime': self.tau}]
-
-        # if short_ma > long_ma:
-        #     return [{'direction':BUY, 'price': price, 'lifetime': self.tau}]
-        # if short_ma < long_ma:
-        #     return [{'direction':SELL, 'price': price, 'lifetime': self.tau}]
+        if short_ma > long_ma:
+            return [{'direction':BUY, 'price': limit, 'lifetime': self.tau}]
+        if short_ma < long_ma:
+            return [{'direction':SELL, 'price': limit, 'lifetime': self.tau}]
 
         return []
 

@@ -248,20 +248,7 @@ class MyMarket(markets.Market):
         self.lastprice = self.p_f 
         self.transaction = 0
         self.historical = np.array([])
-        self.ohlc = [{"open": self.p_f, "high": self.p_f, "low": self.p_f, "close": self.p_f}]
-
-    def summarise_ohlc(self):
-        if len(self.historical) == 0:
-            return
-
-        open = self.historical[0]
-        close = self.historical[-1]
-        high = max(self.historical)
-        low = min(self.historical)
-
-        self.historical = []
-
-        self.ohlc.append({"open": open, "high": high, "low": low, "close": close})
+       
       
     def sanitize_order(self, raw_order):
         """

@@ -32,9 +32,11 @@ class MeanReversion(agents.Agent):
             raise MissingParameter, 'tau'
         del self.args
 
-        self.lookback = np.random.randint(2, self.max_lookback)
+        self.lookback = np.random.randint(3, self.max_lookback)
         self.buy_threshold = -np.abs(np.random.normal(0, self.sigma_1))
         self.sell_threshold = np.abs(np.random.normal(0, self.sigma_2))
+
+        self.noise = params["engines"][0]["market"]["executionnoise"]
 
     def speak(self, market): # overload the `speak` method to allow agents to view market
         """
@@ -49,18 +51,19 @@ class MeanReversion(agents.Agent):
         """
         Return random order as a dict with keys in (direction, price, quantity).
         """
-        if len(market.ohlc) < self.lookback + 2:
+        if len(market.historical) < self.lookback + 2:
             return [] 
 
-        ma = np.mean([ohlc["close"] for ohlc in market.ohlc[-(1+self.lookback):-1]])
-        std = np.std([ohlc["close"] for ohlc in market.ohlc[-(1+self.lookback):-1]])
+        ma = np.mean(market.historical[-(1+self.lookback):-1])
+        std = np.std(market.historical[-(1+self.lookback):-1])
 
-        price = market.ohlc[-1]["close"]
+        price = market.lastprice
+        limit = price * np.random.normal(1, self.noise)
 
         if (price - ma) / std < self.buy_threshold:
-            return [{'direction':BUY, 'price': price, 'lifetime': self.tau}]
+            return [{'direction':BUY, 'price': limit, 'lifetime': self.tau}]
         if (price - ma) / std > self.sell_threshold:
-            return [{'direction':SELL, 'price': price, 'lifetime': self.tau}]
+            return [{'direction':SELL, 'price': limit, 'lifetime': self.tau}]
 
         return []
 
